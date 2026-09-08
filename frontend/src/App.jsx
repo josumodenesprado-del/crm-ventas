@@ -34,7 +34,9 @@ function App() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="pipeline" element={<Pipeline />} />
-            <Route path="leads" element={<Leads />} />
+            <Route path="leads" element={<Navigate to="/leads/webs" replace />} />
+            <Route path="leads/webs" element={<Leads key="web" categoria="web" />} />
+            <Route path="leads/clinicas" element={<Leads key="clinica" categoria="clinica" />} />
             <Route path="usuarios" element={<Usuarios />} />
           </Route>
         </Routes>

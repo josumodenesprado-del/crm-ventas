@@ -28,6 +28,7 @@ const initDB = async (retries = 5, delay = 5000) => {
           )),
           notas TEXT,
           asignado_a INTEGER REFERENCES usuarios(id),
+          categoria VARCHAR(20) DEFAULT 'web' CHECK (categoria IN ('web', 'clinica')),
           fecha_seguimiento DATE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -45,6 +46,8 @@ const initDB = async (retries = 5, delay = 5000) => {
 
       await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS fecha_seguimiento DATE`);
       await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE`);
+      await pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS categoria VARCHAR(20) DEFAULT 'web'`);
+      await pool.query(`UPDATE leads SET categoria = 'web' WHERE categoria IS NULL`);
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('Admin123!', salt);

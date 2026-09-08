@@ -101,15 +101,16 @@ router.get('/stats', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento } = req.body;
+    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento, categoria } = req.body;
 
     const vendedorId = req.usuario.rol === 'admin' ? (asignado_a || req.usuario.id) : req.usuario.id;
+    const cat = ['web', 'clinica'].includes(categoria) ? categoria : 'web';
 
     const result = await pool.query(
-      `INSERT INTO leads (nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      `INSERT INTO leads (nombre, empresa, telefono, email, estado, notas, asignado_a, categoria, fecha_seguimiento)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [nombre, empresa, telefono, email, estado || 'sin_contactar', notas, vendedorId, fecha_seguimiento || null]
+      [nombre, empresa, telefono, email, estado || 'sin_contactar', notas, vendedorId, cat, fecha_seguimiento || null]
     );
 
     await pool.query(
@@ -127,7 +128,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento } = req.body;
+    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento, categoria } = req.body;
 
     let lead;
     if (req.usuario.rol === 'admin') {
@@ -142,20 +143,23 @@ router.put('/:id', auth, async (req, res) => {
 
     const oldEstado = lead.rows[0].estado;
 
+    const cat = categoria === undefined || categoria === null ? null : (['web', 'clinica'].includes(categoria) ? categoria : null);
+
     const result = await pool.query(
-      `UPDATE leads 
-       SET nombre = COALESCE($1, nombre), 
-           empresa = COALESCE($2, empresa), 
-           telefono = COALESCE($3, telefono), 
-           email = COALESCE($4, email), 
-           estado = COALESCE($5, estado), 
+      `UPDATE leads
+       SET nombre = COALESCE($1, nombre),
+           empresa = COALESCE($2, empresa),
+           telefono = COALESCE($3, telefono),
+           email = COALESCE($4, email),
+           estado = COALESCE($5, estado),
            notas = COALESCE($6, notas),
            asignado_a = COALESCE($7, asignado_a),
-           fecha_seguimiento = $8,
+           categoria = COALESCE($8, categoria),
+           fecha_seguimiento = $9,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9 
+       WHERE id = $10
        RETURNING *`,
-      [nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento || null, id]
+      [nombre, empresa, telefono, email, estado, notas, asignado_a, cat, fecha_seguimiento || null, id]
     );
 
     if (estado && estado !== oldEstado) {

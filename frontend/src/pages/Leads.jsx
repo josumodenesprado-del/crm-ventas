@@ -21,9 +21,15 @@ const badgeColors = {
   cerrado_perdido: 'bg-red-100 text-red-800',
 };
 
-const Leads = () => {
+const CATEGORIAS = {
+  web: 'Páginas Web',
+  clinica: 'Clínicas Dental y Estética',
+};
+
+const Leads = ({ categoria }) => {
   const { user, token } = useAuth();
   const toast = useToast();
+  const titulo = CATEGORIAS[categoria] || 'Leads';
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +41,7 @@ const Leads = () => {
   const [filtroFecha, setFiltroFecha] = useState('');
   const [vendedores, setVendedores] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [form, setForm] = useState({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '' });
+  const [form, setForm] = useState({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web' });
 
   useEffect(() => {
     fetchLeads();
@@ -63,7 +69,7 @@ const Leads = () => {
     await fetchLeads();
     setShowModal(false);
     setEditingLead(null);
-    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '' });
+    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web' });
     setSubmitting(false);
     toast.success(editingLead ? 'Lead actualizado' : 'Lead creado');
   };
@@ -77,13 +83,13 @@ const Leads = () => {
 
   const openEdit = (lead) => {
     setEditingLead(lead);
-    setForm({ nombre: lead.nombre, empresa: lead.empresa || '', telefono: lead.telefono || '', email: lead.email || '', estado: lead.estado, notas: lead.notas || '', fecha_seguimiento: lead.fecha_seguimiento ? lead.fecha_seguimiento.split('T')[0] : '' });
+    setForm({ nombre: lead.nombre, empresa: lead.empresa || '', telefono: lead.telefono || '', email: lead.email || '', estado: lead.estado, notas: lead.notas || '', fecha_seguimiento: lead.fecha_seguimiento ? lead.fecha_seguimiento.split('T')[0] : '', categoria: lead.categoria || 'web' });
     setShowModal(true);
   };
 
   const openNew = () => {
     setEditingLead(null);
-    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '' });
+    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web' });
     setShowModal(true);
   };
 
@@ -103,7 +109,7 @@ const Leads = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `leads_${categoria || 'todos'}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Leads exportados');
@@ -114,11 +120,12 @@ const Leads = () => {
     const matchBusqueda = !q || l.nombre.toLowerCase().includes(q) || (l.empresa && l.empresa.toLowerCase().includes(q)) || (l.email && l.email.toLowerCase().includes(q));
     const matchEstado = filtroEstado === 'todos' || l.estado === filtroEstado;
     const matchVendedor = filtroVendedor === 'todos' || l.asignado_a == filtroVendedor;
+    const matchCategoria = !categoria || (l.categoria || 'web') === categoria;
     let matchFecha = true;
     if (filtroFecha) {
       matchFecha = l.fecha_seguimiento && l.fecha_seguimiento.split('T')[0] === filtroFecha;
     }
-    return matchBusqueda && matchEstado && matchVendedor && matchFecha;
+    return matchBusqueda && matchEstado && matchVendedor && matchCategoria && matchFecha;
   });
 
   if (loading) return (
@@ -136,7 +143,7 @@ const Leads = () => {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Leads</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Leads · {titulo}</h1>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:flex-none">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,6 +276,13 @@ const Leads = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
                 <select value={form.estado} onChange={(e) => setForm({...form, estado: e.target.value})} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
                   {estados.map((e) => <option key={e.value} value={e.value}>{e.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de lead</label>
+                <select value={form.categoria} onChange={(e) => setForm({...form, categoria: e.target.value})} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                  <option value="web">Páginas Web</option>
+                  <option value="clinica">Clínicas Dental y Estética</option>
                 </select>
               </div>
               <div>
