@@ -101,15 +101,15 @@ router.get('/stats', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { nombre, empresa, telefono, email, estado, notas, asignado_a } = req.body;
+    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento } = req.body;
 
     const vendedorId = req.usuario.rol === 'admin' ? (asignado_a || req.usuario.id) : req.usuario.id;
 
     const result = await pool.query(
-      `INSERT INTO leads (nombre, empresa, telefono, email, estado, notas, asignado_a) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO leads (nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [nombre, empresa, telefono, email, estado || 'sin_contactar', notas, vendedorId]
+      [nombre, empresa, telefono, email, estado || 'sin_contactar', notas, vendedorId, fecha_seguimiento || null]
     );
 
     await pool.query(
@@ -127,7 +127,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, empresa, telefono, email, estado, notas, asignado_a } = req.body;
+    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento } = req.body;
 
     let lead;
     if (req.usuario.rol === 'admin') {
@@ -151,16 +151,23 @@ router.put('/:id', auth, async (req, res) => {
            estado = COALESCE($5, estado), 
            notas = COALESCE($6, notas),
            asignado_a = COALESCE($7, asignado_a),
+           fecha_seguimiento = $8,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8 
+       WHERE id = $9 
        RETURNING *`,
-      [nombre, empresa, telefono, email, estado, notas, asignado_a, id]
+      [nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento || null, id]
     );
 
     if (estado && estado !== oldEstado) {
+      const eLabels = { sin_contactar: 'Sin Contactar', contactado: 'Contactado', interesado: 'Interesado', propuesta_enviada: 'Propuesta Enviada', cerrado_ganado: 'Ganado', cerrado_perdido: 'Perdido' };
       await pool.query(
         'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
-        [id, req.usuario.id, 'cambio_estado', `Estado cambiado de "${oldEstado}" a "${estado}"`]
+        [id, req.usuario.id, 'cambio_estado', `Estado cambiado de "${eLabels[oldEstado] || oldEstado}" a "${eLabels[estado] || estado}"`]
+      );
+    } else {
+      await pool.query(
+        'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
+        [id, req.usuario.id, 'editado', `Lead editado`]
       );
     }
 
@@ -185,6 +192,11 @@ router.delete('/:id', auth, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Lead no encontrado o sin acceso' });
     }
+
+    await pool.query(
+      'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
+      [id, req.usuario.id, 'eliminado', `Lead eliminado`]
+    );
 
     res.json({ message: 'Lead eliminado' });
   } catch (error) {

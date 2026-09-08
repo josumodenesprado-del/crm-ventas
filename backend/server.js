@@ -7,7 +7,7 @@ const app = express();
 
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'https://crm-ventas-frontend.vercel.app']
+    ? [process.env.FRONTEND_URL || 'https://crm-velixai.vercel.app', 'https://frontend-eight-orcin-17.vercel.app']
     : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 };
@@ -17,6 +17,7 @@ app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/leads', require('./routes/leads'));
+app.use('/api/actividad', require('./routes/actividad'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
