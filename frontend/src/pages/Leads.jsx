@@ -123,16 +123,9 @@ const Leads = () => {
 
   if (loading) return (
     <div className="animate-pulse">
-      <div className="flex justify-between items-center mb-6">
-        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-        <div className="flex gap-3">
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-64"></div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-32"></div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-32"></div>
-        </div>
-      </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-        <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded mb-3"></div>
+      <div className="h-8 bg-gray-200 rounded w-32 mb-6"></div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-4">
+        <div className="h-10 bg-gray-100 rounded mb-3"></div>
         {[...Array(5)].map((_, i) => (
           <div key={i} className="h-14 bg-gray-50 dark:bg-gray-700/50 rounded mb-2"></div>
         ))}
@@ -142,141 +135,104 @@ const Leads = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Leads</h1>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Leads</h1>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:flex-none">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input
-              type="text"
-              placeholder="Buscar por nombre, empresa o email..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
-            />
+            <input type="text" placeholder="Buscar..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-48 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400" />
           </div>
-          <button onClick={exportarCSV} className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition whitespace-nowrap">
-            Descargar Excel
-          </button>
-          <button onClick={openNew} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition whitespace-nowrap">
-            + Nuevo Lead
-          </button>
+          <button onClick={exportarCSV} className="bg-green-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-green-700 transition text-sm whitespace-nowrap">Excel</button>
+          <button onClick={openNew} className="bg-blue-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-blue-700 transition text-sm whitespace-nowrap">+ Nuevo</button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <select
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
-        >
+      <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+        <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
           <option value="todos">Todos los estados</option>
           {estados.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
         </select>
-
         {user?.rol === 'admin' && (
-          <select
-            value={filtroVendedor}
-            onChange={(e) => setFiltroVendedor(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
-          >
+          <select value={filtroVendedor} onChange={(e) => setFiltroVendedor(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
             <option value="todos">Todos los vendedores</option>
             {vendedores.filter(v => v.rol === 'vendedor').map(v => (
               <option key={v.id} value={v.id}>{v.nombre}</option>
             ))}
           </select>
         )}
-
         <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={filtroFecha}
-            onChange={(e) => setFiltroFecha(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
-          />
-          {filtroFecha && (
-            <button onClick={() => setFiltroFecha('')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm">
-              Limpiar
-            </button>
-          )}
+          <input type="date" value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
+          {filtroFecha && <button onClick={() => setFiltroFecha('')} className="text-gray-400 hover:text-gray-600 text-sm">Limpiar</button>}
         </div>
-
-        {(filtroEstado !== 'todos' || filtroVendedor !== 'todos' || filtroFecha) && (
-          <button
-            onClick={() => { setFiltroEstado('todos'); setFiltroVendedor('todos'); setFiltroFecha(''); }}
-            className="text-sm text-red-600 hover:text-red-800 font-medium"
-          >
-            Limpiar filtros
-          </button>
-        )}
-
-        <span className="text-sm text-gray-400 ml-auto">
-          {leadsFiltrados.length} de {leads.length} leads
-        </span>
+        <span className="text-sm text-gray-400 ml-auto hidden sm:inline">{leadsFiltrados.length} de {leads.length}</span>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-sm text-gray-500 dark:text-gray-400">
-                <th className="px-6 py-4 font-medium">Nombre</th>
-                <th className="px-6 py-4 font-medium">Empresa</th>
-                <th className="px-6 py-4 font-medium">Contacto</th>
-                <th className="px-6 py-4 font-medium">Estado</th>
-                <th className="px-6 py-4 font-medium">Notas</th>
-                <th className="px-6 py-4 font-medium">Seguimiento</th>
-                {user?.rol === 'admin' && <th className="px-6 py-4 font-medium">Vendedor</th>}
-                <th className="px-6 py-4 font-medium">Acciones</th>
+              <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs text-gray-500 dark:text-gray-400">
+                <th className="px-4 py-3 font-medium">Nombre</th>
+                <th className="px-4 py-3 font-medium hidden sm:table-cell">Empresa</th>
+                <th className="px-4 py-3 font-medium hidden md:table-cell">Contacto</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium hidden lg:table-cell">Notas</th>
+                <th className="px-4 py-3 font-medium hidden sm:table-cell">Seguimiento</th>
+                {user?.rol === 'admin' && <th className="px-4 py-3 font-medium hidden lg:table-cell">Vendedor</th>}
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {leadsFiltrados.map((lead) => (
                 <tr key={lead.id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-6 py-4 font-medium text-gray-800 dark:text-white">{lead.nombre}</td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{lead.empresa || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-800 dark:text-white">{lead.nombre}</div>
+                    <div className="text-xs text-gray-400 sm:hidden">{lead.empresa || ''}</div>
+                    <div className="text-xs text-gray-400 md:hidden">{lead.telefono || lead.email || ''}</div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden sm:table-cell">{lead.empresa || '-'}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden md:table-cell">
                     {lead.telefono && <div>{lead.telefono}</div>}
                     {lead.email && <div>{lead.email}</div>}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeColors[lead.estado]}`}>
                       {estados.find(e => e.value === lead.estado)?.label}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-[200px]">
-                    {lead.notas ? (
-                      <span className="block truncate" title={lead.notas}>{lead.notas}</span>
-                    ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-[150px] hidden lg:table-cell">
+                    {lead.notas ? <span className="block truncate" title={lead.notas}>{lead.notas}</span> : '-'}
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    {lead.fecha_seguimiento ? (
-                      (() => {
-                        const hoy = new Date();
-                        hoy.setHours(0,0,0,0);
-                        const segStr = lead.fecha_seguimiento.split('T')[0];
-                        const seg = new Date(segStr + 'T00:00:00');
-                        const diff = Math.floor((seg - hoy) / (1000*60*60*24));
-                        const [y,m,d] = segStr.split('-');
-                        const fecha = `${d}/${m}/${y}`;
-                        if (diff < 0) return <span className="text-red-600 font-medium">Vencido {Math.abs(diff)}d</span>;
-                        if (diff === 0) return <span className="text-orange-500 font-medium">Es hoy</span>;
-                        if (diff <= 3) return <span className="text-yellow-600">En {diff}d</span>;
-                        return <span className="text-gray-500 dark:text-gray-400">{fecha}</span>;
-                      })()
-                    ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    {lead.fecha_seguimiento ? (() => {
+                      const hoy = new Date(); hoy.setHours(0,0,0,0);
+                      const segStr = lead.fecha_seguimiento.split('T')[0];
+                      const seg = new Date(segStr + 'T00:00:00');
+                      const diff = Math.floor((seg - hoy) / (1000*60*60*24));
+                      const [y,m,d] = segStr.split('-');
+                      if (diff < 0) return <span className="text-red-600 font-medium text-xs">Vencido {Math.abs(diff)}d</span>;
+                      if (diff === 0) return <span className="text-orange-500 font-medium text-xs">Es hoy</span>;
+                      if (diff <= 3) return <span className="text-yellow-600 text-xs">En {diff}d</span>;
+                      return <span className="text-gray-500 dark:text-gray-400 text-xs">{d}/{m}/{y}</span>;
+                    })() : '-'}
                   </td>
-                  {user?.rol === 'admin' && <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{lead.vendedor_nombre}</td>}
-                  <td className="px-6 py-4">
-                    <button onClick={() => openEdit(lead)} className="text-blue-600 hover:text-blue-800 mr-3">Editar</button>
-                    <button onClick={() => setConfirmDelete(lead)} className="text-red-600 hover:text-red-800">Eliminar</button>
+                  {user?.rol === 'admin' && <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs hidden lg:table-cell">{lead.vendedor_nombre}</td>}
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button onClick={() => openEdit(lead)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">Editar</button>
+                      <button onClick={() => setConfirmDelete(lead)} className="text-red-600 hover:text-red-800 text-sm font-medium">Borrar</button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {leadsFiltrados.length === 0 && (
-                <tr><td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">{busqueda ? 'No se encontraron leads con esa busqueda' : 'No hay leads aun. Crea el primero!'}</td></tr>
+                <tr><td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">{busqueda ? 'No se encontraron leads' : 'No hay leads. Crea el primero!'}</td></tr>
               )}
             </tbody>
           </table>
@@ -284,11 +240,11 @@ const Leads = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md">
-            <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">{editingLead ? 'Editar Lead' : 'Nuevo Lead'}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl">&times;</button>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
@@ -299,7 +255,7 @@ const Leads = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Empresa / Clinica</label>
                 <input type="text" value={form.empresa} onChange={(e) => setForm({...form, empresa: e.target.value})} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefono</label>
                   <input type="tel" value={form.telefono} onChange={(e) => setForm({...form, telefono: e.target.value})} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
@@ -317,16 +273,15 @@ const Leads = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
-                <textarea value={form.notas} onChange={(e) => setForm({...form, notas: e.target.value})} rows={3} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Notas sobre este lead..." />
+                <textarea value={form.notas} onChange={(e) => setForm({...form, notas: e.target.value})} rows={3} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Notas..." />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Seguimiento</label>
                 <input type="date" value={form.fecha_seguimiento} onChange={(e) => setForm({...form, fecha_seguimiento: e.target.value})} className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
-                <p className="text-xs text-gray-400 mt-1">Cuándo toca contactar de nuevo</p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">Cancelar</button>
-                <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">{submitting ? 'Guardando...' : (editingLead ? 'Guardar Cambios' : 'Crear Lead')}</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">{submitting ? 'Guardando...' : (editingLead ? 'Guardar' : 'Crear')}</button>
               </div>
             </form>
           </div>
@@ -335,7 +290,7 @@ const Leads = () => {
       {confirmDelete && (
         <ConfirmModal
           titulo="Eliminar Lead"
-          mensaje={`¿Seguro que quieres eliminar "${confirmDelete.nombre}"? Esta acción no se puede deshacer.`}
+          mensaje={`¿Eliminar "${confirmDelete.nombre}"? No se puede deshacer.`}
           onConfirm={() => handleDelete(confirmDelete.id)}
           onCancel={() => setConfirmDelete(null)}
         />
