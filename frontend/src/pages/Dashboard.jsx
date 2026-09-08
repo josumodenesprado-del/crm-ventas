@@ -123,6 +123,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {user?.rol === 'admin' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">Vendedores</h2>
           <div className="overflow-x-auto">
@@ -149,6 +150,7 @@ const Dashboard = () => {
             </table>
           </div>
         </div>
+        )}
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">Recientes</h2>
