@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://crm-ventas-3yp5.onrender.com/api/:path*"
+      "destination": "https://crm-ventas-backend-production-180c.up.railway.app/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
