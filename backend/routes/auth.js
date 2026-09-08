@@ -6,9 +6,35 @@ const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+const validarPassword = (password) => {
+  if (!password || password.length < 8) {
+    return 'La contraseña debe tener al menos 8 caracteres';
+  }
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+    return 'La contraseña debe tener mayúsculas y minúsculas';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'La contraseña debe incluir al menos un número';
+  }
+  return null;
+};
+
 router.post('/register', auth, adminOnly, async (req, res) => {
   try {
     const { username, nombre, email, password, rol } = req.body;
+
+    if (!username || !nombre || !email || !password) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
+    if (!['admin', 'vendedor'].includes(rol || 'vendedor')) {
+      return res.status(400).json({ error: 'Rol no válido' });
+    }
+
+    const errorPassword = validarPassword(password);
+    if (errorPassword) {
+      return res.status(400).json({ error: errorPassword });
+    }
 
     const existingUser = await pool.query('SELECT id FROM usuarios WHERE email = $1 OR username = $2', [email, username]);
     if (existingUser.rows.length > 0) {
@@ -138,6 +164,11 @@ router.put('/change-password', auth, async (req, res) => {
     const validPassword = await bcrypt.compare(currentPassword, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+
+    const errorPassword = validarPassword(newPassword);
+    if (errorPassword) {
+      return res.status(400).json({ error: errorPassword });
     }
 
     const salt = await bcrypt.genSalt(10);
