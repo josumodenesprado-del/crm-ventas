@@ -19,6 +19,9 @@ const Pipeline = () => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [editingFecha, setEditingFecha] = useState(false);
+  const [fechaDraft, setFechaDraft] = useState('');
+  const [savingFecha, setSavingFecha] = useState(false);
 
   const columns = [
     { id: 'sin_contactar', label: 'Sin Contactar', color: 'bg-gray-100', headerColor: 'bg-gray-500' },
@@ -118,12 +121,37 @@ const Pipeline = () => {
     }
   };
 
+  const saveFecha = async () => {
+    if (!detailLead || savingFecha) return;
+    setSavingFecha(true);
+    try {
+      const res = await fetch(`/api/leads/${detailLead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fecha_seguimiento: fechaDraft || null })
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      const updated = await res.json();
+      setDetailLead(updated);
+      setLeads(leads.map(l => l.id === updated.id ? updated : l));
+      setEditingFecha(false);
+      toast.success(fechaDraft ? 'Seguimiento programado' : 'Seguimiento eliminado');
+    } catch (error) {
+      console.error('Error saving fecha:', error);
+      toast.error('No se pudo guardar');
+    } finally {
+      setSavingFecha(false);
+    }
+  };
+
   const openDetail = async (lead) => {
     setDetailLead(lead);
     setDetailActivity([]);
     setDetailLoading(true);
     setEditingNotes(false);
     setNotesDraft(lead.notas || '');
+    setEditingFecha(false);
+    setFechaDraft(lead.fecha_seguimiento ? lead.fecha_seguimiento.split('T')[0] : '');
     try {
       const res = await fetch(`/api/leads/${lead.id}/activity`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -266,12 +294,30 @@ const Pipeline = () => {
                   {detailLead.direccion && <p className="text-sm text-gray-500 dark:text-gray-400">{detailLead.direccion}</p>}
                 </div>
               )}
-              {detailLead.fecha_seguimiento && (
-                <div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-medium text-gray-400 uppercase">Próximo seguimiento</p>
-                  <p className="text-sm text-gray-800 dark:text-white">📅 {detailLead.fecha_seguimiento.split('T')[0].split('-').reverse().join('/')}</p>
+                  {!editingFecha && (
+                    <button onClick={() => { setFechaDraft(detailLead.fecha_seguimiento ? detailLead.fecha_seguimiento.split('T')[0] : ''); setEditingFecha(true); }} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                      {detailLead.fecha_seguimiento ? 'Cambiar' : 'Poner fecha'}
+                    </button>
+                  )}
                 </div>
-              )}
+                {editingFecha ? (
+                  <div>
+                    <input type="date" value={fechaDraft} onChange={(e) => setFechaDraft(e.target.value)}
+                      className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button onClick={() => setEditingFecha(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">Cancelar</button>
+                      <button onClick={saveFecha} disabled={savingFecha} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">{savingFecha ? 'Guardando...' : 'Guardar'}</button>
+                    </div>
+                  </div>
+                ) : (
+                  detailLead.fecha_seguimiento
+                    ? <p className="text-sm text-gray-800 dark:text-white">📅 {detailLead.fecha_seguimiento.split('T')[0].split('-').reverse().join('/')}</p>
+                    : <p className="text-sm text-gray-400 italic">Sin fecha programada.</p>
+                )}
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-medium text-gray-400 uppercase">Notas</p>
