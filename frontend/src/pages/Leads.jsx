@@ -41,7 +41,7 @@ const Leads = ({ categoria }) => {
   const [filtroFecha, setFiltroFecha] = useState('');
   const [vendedores, setVendedores] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [form, setForm] = useState({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web' });
+  const [form, setForm] = useState({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web', ciudad: '', provincia: '', direccion: '' });
 
   useEffect(() => {
     fetchLeads();
@@ -69,7 +69,7 @@ const Leads = ({ categoria }) => {
     await fetchLeads();
     setShowModal(false);
     setEditingLead(null);
-    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web' });
+    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web', ciudad: '', provincia: '', direccion: '' });
     setSubmitting(false);
     toast.success(editingLead ? 'Lead actualizado' : 'Lead creado');
   };
@@ -83,13 +83,13 @@ const Leads = ({ categoria }) => {
 
   const openEdit = (lead) => {
     setEditingLead(lead);
-    setForm({ nombre: lead.nombre, empresa: lead.empresa || '', telefono: lead.telefono || '', email: lead.email || '', estado: lead.estado, notas: lead.notas || '', fecha_seguimiento: lead.fecha_seguimiento ? lead.fecha_seguimiento.split('T')[0] : '', categoria: lead.categoria || 'web' });
+    setForm({ nombre: lead.nombre, empresa: lead.empresa || '', telefono: lead.telefono || '', email: lead.email || '', estado: lead.estado, notas: lead.notas || '', fecha_seguimiento: lead.fecha_seguimiento ? lead.fecha_seguimiento.split('T')[0] : '', categoria: lead.categoria || 'web', ciudad: lead.ciudad || '', provincia: lead.provincia || '', direccion: lead.direccion || '' });
     setShowModal(true);
   };
 
   const openNew = () => {
     setEditingLead(null);
-    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web' });
+    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web', ciudad: '', provincia: '', direccion: '' });
     setShowModal(true);
   };
 
@@ -117,7 +117,7 @@ const Leads = ({ categoria }) => {
 
   const leadsFiltrados = leads.filter(l => {
     const q = busqueda.toLowerCase();
-    const matchBusqueda = !q || l.nombre.toLowerCase().includes(q) || (l.empresa && l.empresa.toLowerCase().includes(q)) || (l.email && l.email.toLowerCase().includes(q));
+    const matchBusqueda = !q || l.nombre.toLowerCase().includes(q) || (l.empresa && l.empresa.toLowerCase().includes(q)) || (l.email && l.email.toLowerCase().includes(q)) || (l.ciudad && l.ciudad.toLowerCase().includes(q)) || (l.provincia && l.provincia.toLowerCase().includes(q));
     const matchEstado = filtroEstado === 'todos' || l.estado === filtroEstado;
     const matchVendedor = filtroVendedor === 'todos' || l.asignado_a == filtroVendedor;
     const matchCategoria = !categoria || (l.categoria || 'web') === categoria;
@@ -188,6 +188,7 @@ const Leads = ({ categoria }) => {
                 <th className="px-4 py-3 font-medium">Nombre</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">Empresa</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Contacto</th>
+                <th className="px-4 py-3 font-medium hidden md:table-cell">Ubicación</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium hidden lg:table-cell">Notas</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">Seguimiento</th>
@@ -202,11 +203,20 @@ const Leads = ({ categoria }) => {
                     <div className="font-medium text-gray-800 dark:text-white">{lead.nombre}</div>
                     <div className="text-xs text-gray-400 sm:hidden">{lead.empresa || ''}</div>
                     <div className="text-xs text-gray-400 md:hidden">{lead.telefono || lead.email || ''}</div>
+                    {(lead.ciudad || lead.provincia) && <div className="text-xs text-gray-400 md:hidden">📍 {[lead.ciudad, lead.provincia].filter(Boolean).join(', ')}</div>}
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden sm:table-cell">{lead.empresa || '-'}</td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden md:table-cell">
                     {lead.telefono && <div>{lead.telefono}</div>}
                     {lead.email && <div>{lead.email}</div>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden md:table-cell">
+                    {(lead.ciudad || lead.provincia) ? (
+                      <div>
+                        <div className="text-sm">📍 {[lead.ciudad, lead.provincia].filter(Boolean).join(', ')}</div>
+                        {lead.direccion && <div className="text-xs text-gray-400 truncate max-w-[150px]" title={lead.direccion}>{lead.direccion}</div>}
+                      </div>
+                    ) : '-'}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeColors[lead.estado]}`}>
@@ -284,6 +294,20 @@ const Leads = ({ categoria }) => {
                   <option value="web">Páginas Web</option>
                   <option value="clinica">Clínicas Dental y Estética</option>
                 </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
+                  <input type="text" value={form.ciudad} onChange={(e) => setForm({...form, ciudad: e.target.value})} placeholder="Ej. Lorca" className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Provincia</label>
+                  <input type="text" value={form.provincia} onChange={(e) => setForm({...form, provincia: e.target.value})} placeholder="Ej. Murcia" className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                <input type="text" value={form.direccion} onChange={(e) => setForm({...form, direccion: e.target.value})} placeholder="Calle y número" className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
