@@ -101,16 +101,16 @@ router.get('/stats', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento, categoria } = req.body;
+    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento, categoria, ciudad, provincia, direccion } = req.body;
 
     const vendedorId = req.usuario.rol === 'admin' ? (asignado_a || req.usuario.id) : req.usuario.id;
     const cat = ['web', 'clinica'].includes(categoria) ? categoria : 'web';
 
     const result = await pool.query(
-      `INSERT INTO leads (nombre, empresa, telefono, email, estado, notas, asignado_a, categoria, fecha_seguimiento)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO leads (nombre, empresa, telefono, email, estado, notas, asignado_a, categoria, ciudad, provincia, direccion, fecha_seguimiento)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
-      [nombre, empresa, telefono, email, estado || 'sin_contactar', notas, vendedorId, cat, fecha_seguimiento || null]
+      [nombre, empresa, telefono, email, estado || 'sin_contactar', notas, vendedorId, cat, ciudad || null, provincia || null, direccion || null, fecha_seguimiento || null]
     );
 
     await pool.query(
@@ -128,7 +128,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento, categoria } = req.body;
+    const { nombre, empresa, telefono, email, estado, notas, asignado_a, fecha_seguimiento, categoria, ciudad, provincia, direccion } = req.body;
 
     let lead;
     if (req.usuario.rol === 'admin') {
@@ -155,11 +155,14 @@ router.put('/:id', auth, async (req, res) => {
            notas = COALESCE($6, notas),
            asignado_a = COALESCE($7, asignado_a),
            categoria = COALESCE($8, categoria),
-           fecha_seguimiento = $9,
+           ciudad = COALESCE($9, ciudad),
+           provincia = COALESCE($10, provincia),
+           direccion = COALESCE($11, direccion),
+           fecha_seguimiento = $12,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+       WHERE id = $13
        RETURNING *`,
-      [nombre, empresa, telefono, email, estado, notas, asignado_a, cat, fecha_seguimiento || null, id]
+      [nombre, empresa, telefono, email, estado, notas, asignado_a, cat, ciudad, provincia, direccion, fecha_seguimiento || null, id]
     );
 
     if (estado && estado !== oldEstado) {
