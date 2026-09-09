@@ -60,7 +60,7 @@ const initDB = async (retries = 5, delay = 5000) => {
       await pool.query(
         `INSERT INTO usuarios (username, nombre, email, password, rol)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, activo = true, username = COALESCE(EXCLUDED.username, usuarios.username)`,
+         ON CONFLICT (email) DO NOTHING`,
         ['admin', 'Administrador', 'admin@clinica.com', hashedPassword, 'admin']
       );
 
