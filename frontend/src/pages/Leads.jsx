@@ -212,9 +212,9 @@ const Leads = ({ categoria }) => {
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden md:table-cell">
                     {(lead.ciudad || lead.provincia) ? (
-                      <div>
+                      <div title={[lead.direccion, lead.ciudad, lead.provincia].filter(Boolean).join(', ')}>
                         <div className="text-sm">📍 {[lead.ciudad, lead.provincia].filter(Boolean).join(', ')}</div>
-                        {lead.direccion && <div className="text-xs text-gray-400 truncate max-w-[150px]" title={lead.direccion}>{lead.direccion}</div>}
+                        {lead.direccion && <div className="text-xs text-gray-400 truncate max-w-[150px]">{lead.direccion}</div>}
                       </div>
                     ) : '-'}
                   </td>
