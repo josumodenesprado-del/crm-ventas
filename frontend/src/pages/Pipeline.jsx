@@ -16,6 +16,9 @@ const Pipeline = () => {
   const [detailLead, setDetailLead] = useState(null);
   const [detailActivity, setDetailActivity] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const columns = [
     { id: 'sin_contactar', label: 'Sin Contactar', color: 'bg-gray-100', headerColor: 'bg-gray-500' },
@@ -89,10 +92,38 @@ const Pipeline = () => {
     setSegFecha('');
   };
 
+  const saveNotes = async () => {
+    if (!detailLead || savingNotes) return;
+    setSavingNotes(true);
+    try {
+      const res = await fetch(`/api/leads/${detailLead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          notas: notesDraft,
+          fecha_seguimiento: detailLead.fecha_seguimiento ? detailLead.fecha_seguimiento.split('T')[0] : null
+        })
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      const updated = await res.json();
+      setDetailLead(updated);
+      setLeads(leads.map(l => l.id === updated.id ? updated : l));
+      setEditingNotes(false);
+      toast.success('Notas guardadas');
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      toast.error('No se pudo guardar');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   const openDetail = async (lead) => {
     setDetailLead(lead);
     setDetailActivity([]);
     setDetailLoading(true);
+    setEditingNotes(false);
+    setNotesDraft(lead.notas || '');
     try {
       const res = await fetch(`/api/leads/${lead.id}/activity`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -241,12 +272,29 @@ const Pipeline = () => {
                   <p className="text-sm text-gray-800 dark:text-white">📅 {detailLead.fecha_seguimiento.split('T')[0].split('-').reverse().join('/')}</p>
                 </div>
               )}
-              {detailLead.notas && (
-                <div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-medium text-gray-400 uppercase">Notas</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{detailLead.notas}</p>
+                  {!editingNotes && (
+                    <button onClick={() => { setNotesDraft(detailLead.notas || ''); setEditingNotes(true); }} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">Editar</button>
+                  )}
                 </div>
-              )}
+                {editingNotes ? (
+                  <div>
+                    <textarea value={notesDraft} onChange={(e) => setNotesDraft(e.target.value)} rows={4}
+                      placeholder="Escribe aquí lo hablado, próxima acción..."
+                      className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button onClick={() => setEditingNotes(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">Cancelar</button>
+                      <button onClick={saveNotes} disabled={savingNotes} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">{savingNotes ? 'Guardando...' : 'Guardar'}</button>
+                    </div>
+                  </div>
+                ) : (
+                  detailLead.notas
+                    ? <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{detailLead.notas}</p>
+                    : <p className="text-sm text-gray-400 italic">Sin notas. Pulsa Editar para añadir.</p>
+                )}
+              </div>
               {detailLead.vendedor_nombre && (
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase">Vendedor</p>
