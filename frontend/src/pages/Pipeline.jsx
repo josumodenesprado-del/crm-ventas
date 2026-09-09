@@ -13,7 +13,9 @@ const Pipeline = () => {
   const [showSeguimientoModal, setShowSeguimientoModal] = useState(false);
   const [pendingMove, setPendingMove] = useState(null);
   const [segFecha, setSegFecha] = useState('');
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [detailLead, setDetailLead] = useState(null);
+  const [detailActivity, setDetailActivity] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const columns = [
     { id: 'sin_contactar', label: 'Sin Contactar', color: 'bg-gray-100', headerColor: 'bg-gray-500' },
@@ -65,8 +67,8 @@ const Pipeline = () => {
   };
 
   const moveLead = async (nuevoEstado, withDate) => {
-    if (!selectedLead && !pendingMove) return;
-    const lead = pendingMove?.lead || selectedLead;
+    if (!pendingMove) return;
+    const { lead } = pendingMove;
     const fecha = withDate && segFecha ? segFecha : null;
     try {
       await fetch(`/api/leads/${lead.id}`, {
@@ -75,14 +77,32 @@ const Pipeline = () => {
         body: JSON.stringify({ estado: nuevoEstado, fecha_seguimiento: fecha })
       });
       setLeads(leads.map(l => l.id === lead.id ? { ...l, estado: nuevoEstado, fecha_seguimiento: fecha } : l));
+      if (detailLead && detailLead.id === lead.id) {
+        setDetailLead({ ...detailLead, estado: nuevoEstado, fecha_seguimiento: fecha });
+      }
       toast.success(`Lead movido a ${columns.find(c => c.id === nuevoEstado)?.label}`);
     } catch (error) {
       console.error('Error updating lead:', error);
     }
     setShowSeguimientoModal(false);
     setPendingMove(null);
-    setSelectedLead(null);
     setSegFecha('');
+  };
+
+  const openDetail = async (lead) => {
+    setDetailLead(lead);
+    setDetailActivity([]);
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/activity`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setDetailActivity(await res.json());
+    } catch (error) {
+      console.error('Error fetching activity:', error);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   if (loading) {
@@ -136,8 +156,8 @@ const Pipeline = () => {
                 <div className={`${column.color} dark:bg-gray-800/50 p-2 rounded-b-lg min-h-[300px] sm:min-h-[400px]`}>
                   {filteredLeads.map((lead) => (
                     <div key={lead.id} draggable onDragStart={(e) => handleDragStart(e, lead)}
-                      onClick={() => user?.rol === 'admin' ? setSelectedLead(lead) : null}
-                      className="bg-white dark:bg-gray-800 p-2.5 rounded-lg shadow-sm mb-2 cursor-move hover:shadow-md transition border border-gray-100 dark:border-gray-700">
+                      onClick={() => openDetail(lead)}
+                      className="bg-white dark:bg-gray-800 p-2.5 rounded-lg shadow-sm mb-2 cursor-pointer hover:shadow-md transition border border-gray-100 dark:border-gray-700">
                       <h4 className="font-medium text-gray-800 dark:text-white text-sm leading-tight">{lead.nombre}</h4>
                       {lead.empresa && <p className="text-xs text-gray-400 mt-1 truncate">{lead.empresa}</p>}
                       {lead.fecha_seguimiento && (() => {
@@ -175,22 +195,92 @@ const Pipeline = () => {
         </div>
       </div>
 
-      {user?.rol === 'admin' && selectedLead && (
-        <div className="fixed bottom-4 right-4 z-40">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 p-4 w-64">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-sm text-gray-800 dark:text-white">{selectedLead.nombre}</h3>
-              <button onClick={() => setSelectedLead(null)} className="text-gray-400 hover:text-gray-600">&times;</button>
+      {detailLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={() => setDetailLead(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">{detailLead.nombre}</h2>
+                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${columns.find(c => c.id === detailLead.estado)?.headerColor} text-white`}>
+                  {columns.find(c => c.id === detailLead.estado)?.label}
+                </span>
+              </div>
+              <button onClick={() => setDetailLead(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl">&times;</button>
             </div>
-            <p className="text-xs text-gray-400 mb-3">Mover a:</p>
-            <div className="space-y-1.5">
-              {columns.filter(c => c.id !== selectedLead.estado).map(c => (
-                <button key={c.id} onClick={() => { setPendingMove({ lead: selectedLead, nuevoEstado: c.id }); setSegFecha(''); setShowSeguimientoModal(true); setSelectedLead(null); }}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${c.headerColor}`}></div>
-                  {c.label}
-                </button>
-              ))}
+            <div className="p-6 space-y-4">
+              {detailLead.empresa && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase">Empresa</p>
+                  <p className="text-sm text-gray-800 dark:text-white">{detailLead.empresa}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {detailLead.telefono && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 uppercase">Teléfono</p>
+                    <a href={`tel:${detailLead.telefono.replace(/\s/g, '')}`} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">📞 {detailLead.telefono}</a>
+                  </div>
+                )}
+                {detailLead.email && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 uppercase">Email</p>
+                    <a href={`mailto:${detailLead.email}`} className="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all">{detailLead.email}</a>
+                  </div>
+                )}
+              </div>
+              {(detailLead.ciudad || detailLead.provincia || detailLead.direccion) && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase">Ubicación</p>
+                  <p className="text-sm text-gray-800 dark:text-white">📍 {[detailLead.ciudad, detailLead.provincia].filter(Boolean).join(', ')}</p>
+                  {detailLead.direccion && <p className="text-sm text-gray-500 dark:text-gray-400">{detailLead.direccion}</p>}
+                </div>
+              )}
+              {detailLead.fecha_seguimiento && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase">Próximo seguimiento</p>
+                  <p className="text-sm text-gray-800 dark:text-white">📅 {detailLead.fecha_seguimiento.split('T')[0].split('-').reverse().join('/')}</p>
+                </div>
+              )}
+              {detailLead.notas && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase">Notas</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{detailLead.notas}</p>
+                </div>
+              )}
+              {detailLead.vendedor_nombre && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase">Vendedor</p>
+                  <p className="text-sm text-gray-800 dark:text-white">{detailLead.vendedor_nombre}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase mb-2">Mover a</p>
+                <div className="flex flex-wrap gap-2">
+                  {columns.filter(c => c.id !== detailLead.estado).map(c => (
+                    <button key={c.id} onClick={() => { setPendingMove({ lead: detailLead, nuevoEstado: c.id }); setSegFecha(''); setShowSeguimientoModal(true); }}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-white hover:opacity-90 transition ${c.headerColor}`}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase mb-2">Historial</p>
+                {detailLoading ? (
+                  <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div></div>
+                ) : detailActivity.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {detailActivity.map(a => (
+                      <div key={a.id} className="p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <p className="text-xs text-gray-800 dark:text-white">{a.descripcion}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{a.usuario_nombre || 'Sistema'} · {new Date(a.created_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">Sin actividad registrada</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
