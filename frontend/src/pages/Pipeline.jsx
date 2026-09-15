@@ -8,6 +8,7 @@ const Pipeline = () => {
   const [leads, setLeads] = useState([]);
   const [vendedores, setVendedores] = useState([]);
   const [vendedorFilter, setVendedorFilter] = useState('todos');
+  const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [draggedLead, setDraggedLead] = useState(null);
   const [showSeguimientoModal, setShowSeguimientoModal] = useState(false);
@@ -186,15 +187,24 @@ const Pipeline = () => {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Pipeline</h1>
-        {user?.rol === 'admin' && vendedores.length > 0 && (
-          <select value={vendedorFilter} onChange={(e) => setVendedorFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
-            <option value="todos">Todos los vendedores</option>
-            {vendedores.filter(v => v.rol === 'vendedor').map(v => (
-              <option key={v.id} value={v.id}>{v.nombre}</option>
-            ))}
-          </select>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:flex-none">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Buscar negocio..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-56 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400" />
+          </div>
+          {user?.rol === 'admin' && vendedores.length > 0 && (
+            <select value={vendedorFilter} onChange={(e) => setVendedorFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+              <option value="todos">Todos los vendedores</option>
+              {vendedores.filter(v => v.rol === 'vendedor').map(v => (
+                <option key={v.id} value={v.id}>{v.nombre}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -203,6 +213,15 @@ const Pipeline = () => {
             let filteredLeads = leads.filter(l => l.estado === column.id);
             if (vendedorFilter !== 'todos') {
               filteredLeads = filteredLeads.filter(l => l.asignado_a == vendedorFilter);
+            }
+            if (busqueda.trim()) {
+              const q = busqueda.toLowerCase();
+              filteredLeads = filteredLeads.filter(l =>
+                l.nombre.toLowerCase().includes(q) ||
+                (l.empresa && l.empresa.toLowerCase().includes(q)) ||
+                (l.telefono && l.telefono.includes(q)) ||
+                (l.ciudad && l.ciudad.toLowerCase().includes(q))
+              );
             }
             return (
               <div key={column.id} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, column.id)} className="min-w-[180px] flex-shrink-0 sm:flex-shrink">
