@@ -83,7 +83,8 @@ const Pipeline = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ estado: nuevoEstado, fecha_seguimiento: fecha })
       });
-      setLeads(leads.map(l => l.id === lead.id ? { ...l, estado: nuevoEstado, fecha_seguimiento: fecha } : l));
+      const moved = { ...lead, estado: nuevoEstado, fecha_seguimiento: fecha };
+      setLeads([moved, ...leads.filter(l => l.id !== lead.id)]);
       if (detailLead && detailLead.id === lead.id) {
         setDetailLead({ ...detailLead, estado: nuevoEstado, fecha_seguimiento: fecha });
       }
@@ -111,7 +112,7 @@ const Pipeline = () => {
       if (!res.ok) throw new Error('Error al guardar');
       const updated = await res.json();
       setDetailLead(updated);
-      setLeads(leads.map(l => l.id === updated.id ? updated : l));
+      setLeads([updated, ...leads.filter(l => l.id !== updated.id)]);
       setEditingNotes(false);
       toast.success('Notas guardadas');
     } catch (error) {
@@ -134,7 +135,7 @@ const Pipeline = () => {
       if (!res.ok) throw new Error('Error al guardar');
       const updated = await res.json();
       setDetailLead(updated);
-      setLeads(leads.map(l => l.id === updated.id ? updated : l));
+      setLeads([updated, ...leads.filter(l => l.id !== updated.id)]);
       setEditingFecha(false);
       toast.success(fechaDraft ? 'Seguimiento programado' : 'Seguimiento eliminado');
     } catch (error) {
