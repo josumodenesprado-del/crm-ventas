@@ -27,7 +27,7 @@ const CATEGORIAS = {
 };
 
 const Leads = ({ categoria }) => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const toast = useToast();
   const titulo = CATEGORIAS[categoria] || 'Leads';
   const [leads, setLeads] = useState([]);
@@ -63,19 +63,47 @@ const Leads = ({ categoria }) => {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
-    const url = editingLead ? `/api/leads/${editingLead.id}` : '/api/leads';
-    const method = editingLead ? 'PUT' : 'POST';
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) });
-    await fetchLeads();
-    setShowModal(false);
-    setEditingLead(null);
-    setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web', ciudad: '', provincia: '', direccion: '' });
-    setSubmitting(false);
-    toast.success(editingLead ? 'Lead actualizado' : 'Lead creado');
+    try {
+      const url = editingLead ? `/api/leads/${editingLead.id}` : '/api/leads';
+      const method = editingLead ? 'PUT' : 'POST';
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) });
+      if (!res.ok) {
+        if (res.status === 401) {
+          toast.error('Sesión caducada, vuelve a entrar');
+          logout();
+          return;
+        }
+        let msg = 'No se pudo guardar';
+        try {
+          const data = await res.json();
+          if (data.error) msg = data.error;
+        } catch { /* mantener genérico */ }
+        toast.error(msg);
+        return;
+      }
+      await fetchLeads();
+      setShowModal(false);
+      setEditingLead(null);
+      setForm({ nombre: '', empresa: '', telefono: '', email: '', estado: 'sin_contactar', notas: '', fecha_seguimiento: '', categoria: categoria || 'web', ciudad: '', provincia: '', direccion: '' });
+      toast.success(editingLead ? 'Lead actualizado' : 'Lead creado');
+    } catch {
+      toast.error('No se pudo guardar, revisa tu conexión');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (id) => {
-    await fetch(`/api/leads/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`/api/leads/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      if (res.status === 401) {
+        toast.error('Sesión caducada, vuelve a entrar');
+        logout();
+        return;
+      }
+      toast.error('No se pudo eliminar');
+      return;
+    }
     fetchLeads();
     toast.success('Lead eliminado');
     setConfirmDelete(null);

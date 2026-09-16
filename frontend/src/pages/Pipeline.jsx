@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 const Pipeline = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const toast = useToast();
   const [leads, setLeads] = useState([]);
   const [vendedores, setVendedores] = useState([]);
@@ -73,16 +73,38 @@ const Pipeline = () => {
     setDraggedLead(null);
   };
 
+  const handleAuthError = async (res) => {
+    if (res.status === 401) {
+      toast.error('Sesión caducada, vuelve a entrar');
+      logout();
+      return true;
+    }
+    return false;
+  };
+
+  const parseError = async (res, fallback) => {
+    try {
+      const data = await res.json();
+      return data.error || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   const moveLead = async (nuevoEstado, withDate) => {
     if (!pendingMove) return;
     const { lead } = pendingMove;
     const fecha = withDate && segFecha ? segFecha : null;
     try {
-      await fetch(`/api/leads/${lead.id}`, {
+      const res = await fetch(`/api/leads/${lead.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ estado: nuevoEstado, fecha_seguimiento: fecha })
       });
+      if (!res.ok) {
+        if (await handleAuthError(res)) return;
+        throw new Error(await parseError(res, 'No se pudo mover'));
+      }
       const moved = { ...lead, estado: nuevoEstado, fecha_seguimiento: fecha };
       setLeads([moved, ...leads.filter(l => l.id !== lead.id)]);
       if (detailLead && detailLead.id === lead.id) {
@@ -91,6 +113,7 @@ const Pipeline = () => {
       toast.success(`Lead movido a ${columns.find(c => c.id === nuevoEstado)?.label}`);
     } catch (error) {
       console.error('Error updating lead:', error);
+      toast.error(error.message || 'No se pudo mover');
     }
     setShowSeguimientoModal(false);
     setPendingMove(null);
@@ -109,7 +132,10 @@ const Pipeline = () => {
           fecha_seguimiento: detailLead.fecha_seguimiento ? detailLead.fecha_seguimiento.split('T')[0] : null
         })
       });
-      if (!res.ok) throw new Error('Error al guardar');
+      if (!res.ok) {
+        if (await handleAuthError(res)) return;
+        throw new Error(await parseError(res, 'No se pudo guardar'));
+      }
       const updated = await res.json();
       setDetailLead(updated);
       setLeads([updated, ...leads.filter(l => l.id !== updated.id)]);
@@ -117,7 +143,7 @@ const Pipeline = () => {
       toast.success('Notas guardadas');
     } catch (error) {
       console.error('Error saving notes:', error);
-      toast.error('No se pudo guardar');
+      toast.error(error.message || 'No se pudo guardar');
     } finally {
       setSavingNotes(false);
     }
@@ -132,7 +158,10 @@ const Pipeline = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ fecha_seguimiento: fechaDraft || null })
       });
-      if (!res.ok) throw new Error('Error al guardar');
+      if (!res.ok) {
+        if (await handleAuthError(res)) return;
+        throw new Error(await parseError(res, 'No se pudo guardar'));
+      }
       const updated = await res.json();
       setDetailLead(updated);
       setLeads([updated, ...leads.filter(l => l.id !== updated.id)]);
@@ -140,7 +169,7 @@ const Pipeline = () => {
       toast.success(fechaDraft ? 'Seguimiento programado' : 'Seguimiento eliminado');
     } catch (error) {
       console.error('Error saving fecha:', error);
-      toast.error('No se pudo guardar');
+      toast.error(error.message || 'No se pudo guardar');
     } finally {
       setSavingFecha(false);
     }
