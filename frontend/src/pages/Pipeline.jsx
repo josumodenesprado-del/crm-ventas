@@ -17,9 +17,8 @@ const Pipeline = () => {
   const [detailLead, setDetailLead] = useState(null);
   const [detailActivity, setDetailActivity] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [notesDraft, setNotesDraft] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
+  const [notaDraft, setNotaDraft] = useState('');
+  const [savingNota, setSavingNota] = useState(false);
   const [editingFecha, setEditingFecha] = useState(false);
   const [fechaDraft, setFechaDraft] = useState('');
   const [savingFecha, setSavingFecha] = useState(false);
@@ -120,32 +119,31 @@ const Pipeline = () => {
     setSegFecha('');
   };
 
-  const saveNotes = async () => {
-    if (!detailLead || savingNotes) return;
-    setSavingNotes(true);
+  const addNota = async () => {
+    if (!detailLead || savingNota || !notaDraft.trim()) return;
+    setSavingNota(true);
     try {
-      const res = await fetch(`/api/leads/${detailLead.id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/leads/${detailLead.id}/notas`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          notas: notesDraft,
-          fecha_seguimiento: detailLead.fecha_seguimiento ? detailLead.fecha_seguimiento.split('T')[0] : null
-        })
+        body: JSON.stringify({ texto: notaDraft.trim() })
       });
       if (!res.ok) {
         if (await handleAuthError(res)) return;
-        throw new Error(await parseError(res, 'No se pudo guardar'));
+        throw new Error(await parseError(res, 'No se pudo guardar la nota'));
       }
-      const updated = await res.json();
-      setDetailLead(updated);
-      setLeads([updated, ...leads.filter(l => l.id !== updated.id)]);
-      setEditingNotes(false);
-      toast.success('Notas guardadas');
+      const nueva = await res.json();
+      setDetailActivity([nueva, ...detailActivity]);
+      const updatedLead = { ...detailLead, notas: nueva.descripcion };
+      setDetailLead(updatedLead);
+      setLeads([updatedLead, ...leads.filter(l => l.id !== updatedLead.id)]);
+      setNotaDraft('');
+      toast.success('Nota añadida');
     } catch (error) {
-      console.error('Error saving notes:', error);
-      toast.error(error.message || 'No se pudo guardar');
+      console.error('Error saving nota:', error);
+      toast.error(error.message || 'No se pudo guardar la nota');
     } finally {
-      setSavingNotes(false);
+      setSavingNota(false);
     }
   };
 
@@ -179,8 +177,7 @@ const Pipeline = () => {
     setDetailLead(lead);
     setDetailActivity([]);
     setDetailLoading(true);
-    setEditingNotes(false);
-    setNotesDraft(lead.notas || '');
+    setNotaDraft('');
     setEditingFecha(false);
     setFechaDraft(lead.fecha_seguimiento ? lead.fecha_seguimiento.split('T')[0] : '');
     try {
@@ -368,27 +365,35 @@ const Pipeline = () => {
                 )}
               </div>
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-medium text-gray-400 uppercase">Notas</p>
-                  {!editingNotes && (
-                    <button onClick={() => { setNotesDraft(detailLead.notas || ''); setEditingNotes(true); }} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">Editar</button>
-                  )}
-                </div>
-                {editingNotes ? (
-                  <div>
-                    <textarea value={notesDraft} onChange={(e) => setNotesDraft(e.target.value)} rows={4}
-                      placeholder="Escribe aquí lo hablado, próxima acción..."
-                      className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
-                    <div className="flex justify-end gap-2 mt-2">
-                      <button onClick={() => setEditingNotes(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">Cancelar</button>
-                      <button onClick={saveNotes} disabled={savingNotes} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">{savingNotes ? 'Guardando...' : 'Guardar'}</button>
-                    </div>
-                  </div>
-                ) : (
-                  detailLead.notas
-                    ? <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{detailLead.notas}</p>
-                    : <p className="text-sm text-gray-400 italic">Sin notas. Pulsa Editar para añadir.</p>
-                )}
+                <p className="text-xs font-medium text-gray-400 uppercase mb-2">Notas · historial</p>
+                {(() => {
+                  const notas = detailActivity.filter(a => a.accion === 'nota');
+                  return (
+                    <>
+                      {notas.length > 0 ? (
+                        <div className="space-y-2 max-h-56 overflow-y-auto mb-3">
+                          {notas.map(n => (
+                            <div key={n.id} className="p-2.5 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/40 rounded-lg">
+                              <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{n.descripcion}</p>
+                              <p className="text-[11px] text-gray-400 mt-1">{n.usuario_nombre || 'Sistema'} · {new Date(n.created_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : detailLead.notas ? (
+                        <div className="p-2.5 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/40 rounded-lg mb-3">
+                          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{detailLead.notas}</p>
+                          <p className="text-[11px] text-gray-400 mt-1">Nota actual · sin historial previo</p>
+                        </div>
+                      ) : null}
+                      <textarea value={notaDraft} onChange={(e) => setNotaDraft(e.target.value)} rows={2}
+                        placeholder="Escribe una nota... se añade al historial sin borrar las anteriores"
+                        className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" />
+                      <div className="flex justify-end mt-2">
+                        <button onClick={addNota} disabled={savingNota || !notaDraft.trim()} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">{savingNota ? 'Añadiendo...' : 'Añadir nota'}</button>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               {detailLead.vendedor_nombre && (
                 <div>
