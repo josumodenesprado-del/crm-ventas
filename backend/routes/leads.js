@@ -142,6 +142,7 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     const oldEstado = lead.rows[0].estado;
+    const oldNotas = (lead.rows[0].notas || '').trim();
 
     const cat = categoria === undefined || categoria === null ? null : (['web', 'clinica'].includes(categoria) ? categoria : null);
 
@@ -171,7 +172,32 @@ router.put('/:id', auth, async (req, res) => {
         'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
         [id, req.usuario.id, 'cambio_estado', `Estado cambiado de "${eLabels[oldEstado] || oldEstado}" a "${eLabels[estado] || estado}"`]
       );
-    } else {
+    }
+
+    // Historial de notas: si el texto cambia, se conserva en actividades.
+    // Si es la primera vez (no hay notas en el historial) se rescata el
+    // texto anterior para no perderlo.
+    const notasProvistas = notas !== undefined && notas !== null;
+    const newNotas = notasProvistas ? String(notas).trim() : '';
+    const notasCambian = notasProvistas && newNotas !== oldNotas;
+    if (notasCambian && newNotas) {
+      const previas = await pool.query(
+        "SELECT COUNT(*) as total FROM actividades WHERE lead_id = $1 AND accion = 'nota'",
+        [id]
+      );
+      if (parseInt(previas.rows[0].total, 10) === 0 && oldNotas) {
+        await pool.query(
+          'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
+          [id, req.usuario.id, 'nota', oldNotas]
+        );
+      }
+      await pool.query(
+        'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
+        [id, req.usuario.id, 'nota', newNotas]
+      );
+    }
+
+    if (!(estado && estado !== oldEstado) && !(notasCambian && newNotas)) {
       await pool.query(
         'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
         [id, req.usuario.id, 'editado', `Lead editado`]
