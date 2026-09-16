@@ -212,6 +212,53 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+router.post('/:id/notas', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { texto } = req.body;
+
+    if (!texto || !texto.trim()) {
+      return res.status(400).json({ error: 'La nota no puede estar vacía' });
+    }
+
+    let lead;
+    if (req.usuario.rol === 'admin') {
+      lead = await pool.query('SELECT * FROM leads WHERE id = $1', [id]);
+    } else {
+      lead = await pool.query('SELECT * FROM leads WHERE id = $1 AND asignado_a = $2', [id, req.usuario.id]);
+    }
+
+    if (lead.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead no encontrado o sin acceso' });
+    }
+
+    const nota = await pool.query(
+      `INSERT INTO actividades (lead_id, usuario_id, accion, descripcion)
+       VALUES ($1, $2, 'nota', $3)
+       RETURNING *`,
+      [id, req.usuario.id, texto.trim()]
+    );
+
+    await pool.query(
+      'UPDATE leads SET notas = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [texto.trim(), id]
+    );
+
+    const withUser = await pool.query(
+      `SELECT a.*, u.nombre as usuario_nombre
+       FROM actividades a
+       LEFT JOIN usuarios u ON a.usuario_id = u.id
+       WHERE a.id = $1`,
+      [nota.rows[0].id]
+    );
+
+    res.status(201).json(withUser.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 router.get('/:id/activity', auth, async (req, res) => {
   try {
     const { id } = req.params;
