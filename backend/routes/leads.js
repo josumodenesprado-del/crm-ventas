@@ -200,11 +200,8 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: 'Lead no encontrado o sin acceso' });
     }
 
-    await pool.query(
-      'INSERT INTO actividades (lead_id, usuario_id, accion, descripcion) VALUES ($1, $2, $3, $4)',
-      [id, req.usuario.id, 'eliminado', `Lead eliminado`]
-    );
-
+    // Nota: no se registra actividad 'eliminado' porque el borrado
+    // del lead elimina en cascada su historial (FK ON DELETE CASCADE).
     res.json({ message: 'Lead eliminado' });
   } catch (error) {
     console.error(error);
