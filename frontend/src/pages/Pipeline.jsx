@@ -40,11 +40,11 @@ const Pipeline = () => {
   useEffect(() => {
     const id = setInterval(() => {
       if (document.hidden) return;
-      if (detailLead || showSeguimientoModal || editingNotes || editingFecha || savingNotes || savingFecha || draggedLead) return;
+      if (detailLead || showSeguimientoModal || editingFecha || savingFecha || savingNota || draggedLead) return;
       fetchLeads();
     }, 30000);
     return () => clearInterval(id);
-  }, [detailLead, showSeguimientoModal, editingNotes, editingFecha, savingNotes, savingFecha, draggedLead, token]);
+  }, [detailLead, showSeguimientoModal, editingFecha, savingFecha, savingNota, draggedLead, token]);
 
   const fetchVendedores = async () => {
     const res = await fetch('/api/auth/users', { headers: { Authorization: `Bearer ${token}` } });
