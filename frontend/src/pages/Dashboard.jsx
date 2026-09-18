@@ -9,6 +9,11 @@ const Dashboard = () => {
 
   useEffect(() => { fetchLeads(); }, []);
 
+  useEffect(() => {
+    const id = setInterval(() => { if (!document.hidden) fetchLeads(); }, 30000);
+    return () => clearInterval(id);
+  }, [token]);
+
   const fetchLeads = async () => {
     try {
       const res = await fetch('/api/leads', { headers: { Authorization: `Bearer ${token}` } });

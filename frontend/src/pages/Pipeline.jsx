@@ -37,6 +37,15 @@ const Pipeline = () => {
     if (user?.rol === 'admin') fetchVendedores();
   }, []);
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      if (detailLead || showSeguimientoModal || editingNotes || editingFecha || savingNotes || savingFecha || draggedLead) return;
+      fetchLeads();
+    }, 30000);
+    return () => clearInterval(id);
+  }, [detailLead, showSeguimientoModal, editingNotes, editingFecha, savingNotes, savingFecha, draggedLead, token]);
+
   const fetchVendedores = async () => {
     const res = await fetch('/api/auth/users', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) setVendedores(await res.json());
@@ -215,6 +224,12 @@ const Pipeline = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Pipeline</h1>
         <div className="flex items-center gap-2">
+          <button onClick={fetchLeads} title="Actualizar ahora"
+            className="px-2.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
           <div className="relative flex-1 sm:flex-none">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

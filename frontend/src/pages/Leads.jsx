@@ -48,6 +48,15 @@ const Leads = ({ categoria }) => {
     if (user?.rol === 'admin') fetchVendedores();
   }, []);
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      if (showModal || confirmDelete || submitting) return;
+      fetchLeads();
+    }, 30000);
+    return () => clearInterval(id);
+  }, [showModal, confirmDelete, submitting, token]);
+
   const fetchLeads = async () => {
     const res = await fetch('/api/leads', { headers: { Authorization: `Bearer ${token}` } });
     setLeads(await res.json());
@@ -181,6 +190,7 @@ const Leads = ({ categoria }) => {
               className="pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-48 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400" />
           </div>
           <button onClick={exportarCSV} className="bg-green-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-green-700 transition text-sm whitespace-nowrap">Excel</button>
+          <button onClick={fetchLeads} title="Actualizar ahora" className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-2 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm whitespace-nowrap">↻</button>
           <button onClick={openNew} className="bg-blue-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-blue-700 transition text-sm whitespace-nowrap">+ Nuevo</button>
         </div>
       </div>
